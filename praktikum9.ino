@@ -15,7 +15,7 @@ void setup() {
     digitalWrite(ledBiru, LOW);
 
     Serial.print("Connecting to WiFi");
-    WiFi.begin(ssid, password, wifiChannel);
+    WiFi.begin(ssid, "", wifiChannel);
     while (WiFi.status() != WL_CONNECTED) {
         delay(100);
         Serial.print(".");
