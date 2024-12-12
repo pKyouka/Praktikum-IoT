@@ -1,10 +1,6 @@
-#if defined(ESP8266)
-#include <ESP8266WiFi.h>
-#include <WiFiClientSecureBearSSL.h> // Untuk ESP8266
-#elif defined(ESP32)
+defined(ESP32)
 #include <WiFi.h>
-#include <WiFiClientSecure.h>        // Untuk ESP32
-#endif
+#include <WiFiClientSecure.h>  
 
 #include <HTTPClient.h>
 
@@ -17,7 +13,7 @@
 
 #define ACCESSKEY "5599c02fd386b4f9:e68d97895d0962dd" // Ganti dengan access key akun Antares Anda
 #define applicationName "PraktikumInternetofThings"   // Ganti dengan application name Antares yang telah dibuat
-#define deviceName "praktikum10"                     // Ganti dengan device Antares yang telah dibuat
+#define deviceName "praktikum11"                     // Ganti dengan device Antares yang telah dibuat
 
 WiFiClientSecure client;
 
