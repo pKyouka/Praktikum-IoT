@@ -1,54 +1,89 @@
-#include <WiFi.h>
-#include "DHTesp.h"
-#include "ThingSpeak.h"
+#include  "WiFi.h" 
 
-const int DHT_PIN = 15;
-const int LED_PIN = 13;
-const char* WIFI_NAME = "Wokwi-GUEST";
-const char* WIFI_PASSWORD = "";
-const int myChannelNumber = 2804447;
-const char* myApiKey = "23DQWUNO57M6FAKB";
-const char* server = "api.thingspeak.com";
-
-DHTesp dhtSensor;
 WiFiClient client;
 
-void setup() {
-  Serial.begin(115200);
-  dhtSensor.setup(DHT_PIN, DHTesp::DHT22);
-  pinMode(LED_PIN, OUTPUT);
-  WiFi.begin(WIFI_NAME, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED){
-    delay(1000);
-    Serial.println("Wifi not connected");
+#include "DHTesp.h"
+
+const int DHT_PIN = 15;
+
+DHTesp dhtSensor;;
+
+String thingSpeakAddress = "api.thingspeak.com";
+String writeAPIKey;
+String tsfield1Name;
+String request_string;
+
+
+void setup()
+{
+  Serial.begin(9600);
+  WiFi.disconnect();
+  WiFi.begin("Wokwi-GUEST", "");
+  while ((!(WiFi.status() == WL_CONNECTED))) {
+    delay(300);
+    Serial.print(".");
   }
-  Serial.println("Wifi connected !");
-  Serial.println("Local IP: " + String(WiFi.localIP()));
-  WiFi.mode(WIFI_STA);
-  ThingSpeak.begin(client);
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+  dhtSensor.setup(DHT_PIN, DHTesp::DHT22);
 }
 
-void loop() {
-  TempAndHumidity  data = dhtSensor.getTempAndHumidity();
-  ThingSpeak.setField(1,data.temperature);
-  ThingSpeak.setField(2,data.humidity);
-  if (data.temperature > 35 || data.temperature < 12 || data.humidity > 70 || data.humidity < 40) {
-    digitalWrite(LED_PIN, HIGH);
-  }else{
-    digitalWrite(LED_PIN, LOW);
-  }
-  
-  int x = ThingSpeak.writeFields(myChannelNumber,myApiKey);
-  
-  Serial.println("Temp: " + String(data.temperature, 2) + "°C");
-  Serial.println("Humidity: " + String(data.humidity, 1) + "%");
-  
-  if(x == 200){
-    Serial.println("Data pushed successfull");
-  }else{
-    Serial.println("Push error" + String(x));
-  }
-  Serial.println("---");
 
-  delay(10000);
+void loop()
+{
+  delay(2000);
+  TempAndHumidity  data = dhtSensor.getTempAndHumidity();
+
+  float t = data.temperature;
+  float h = data.humidity;
+
+  kirim_thingspeak(t, h);
+
+  if (isnan(h) || isnan(t) ) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+}
+
+void kirim_thingspeak(float suhu, float hum) {
+  if (client.connect("api.thingspeak.com", 80)) {
+    request_string = "/update?";
+    request_string += "key=";
+    request_string += "ADQJU9DJ1DA296FR";
+    request_string += "&";
+    request_string += "field1";
+    request_string += "=";
+    request_string += suhu;
+    request_string += "&";
+    request_string += "field2";
+    request_string += "=";
+    request_string += hum;
+
+    Serial.println(String("GET ") + request_string + " HTTP/1.1\r\n" +
+                 "Host: " + thingSpeakAddress + "\r\n" +
+                 "Connection: close\r\n\r\n");
+                 
+    client.print(String("GET ") + request_string + " HTTP/1.1\r\n" +
+                 "Host: " + thingSpeakAddress + "\r\n" +
+                 "Connection: close\r\n\r\n");
+    unsigned long timeout = millis();
+    while (client.available() == 0) {
+      if (millis() - timeout > 5000) {
+        Serial.println(">>> Client Timeout !");
+        client.stop();
+        return;
+      }
+    }
+
+    while (client.available()) {
+      String line = client.readStringUntil('\r');
+      Serial.print(line);
+    }
+
+    Serial.println();
+    Serial.println("closing connection");
+
+  }
 }
